@@ -13,4 +13,4 @@ This program downloads livestream footage from links specified in a Google Sheet
     * Share the __webcam-links__ Google Sheet with the Google service account created.
     * You will need to create a key for this service account and download it to a file called `google-sheet-service-auth.json` in this directory. Checkout the template of the file [here](google-sheet-service-authTEMPLATE.json).
  3. Install necessary packages with pip (e.g. `pip install -r requirements.txt`). Note that this was tested on MacOS with Python 3.9.5.
- 4. Create API keys on https://api.openweathermap.org. Create a `.env` file with a variable called `API_KEYS` and copy-and-paste the keys separated by a comma. An template can be found [here](.envTEMPLATE).
+ 4. Create API keys on https://api.openweathermap.org. Create a `.env` file with a variable called `API_KEYS` and copy-and-paste the keys separated by a comma. A template can be found [here](.envTEMPLATE).

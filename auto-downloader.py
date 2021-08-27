@@ -9,6 +9,7 @@ import datetime
 
 dotenv.load_dotenv()
 API_KEYS=os.getenv('API_KEYS').split(",")
+TEST=False
 
 def is_raining(lat, lon, api_key):
   '''
@@ -36,7 +37,17 @@ def is_raining(lat, lon, api_key):
     return True
   return False
 
-def download_ydl_ffmpeg(place, url, quality="best", time="00:00:10.00", wait=True, dir="downloads/"):
+def print_stdout(process):
+  '''
+  Prints out stdout of a subprocess
+  '''
+  try:
+    for line in process.stdout:
+      print(line.rstrip())
+  except:
+    return
+
+def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", wait=True, dir="downloads/"):
   '''
   Downloading a video with youtube-dl and ffmpeg
 
@@ -51,7 +62,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time="00:00:10.00", wait=Tru
   quality : str, Default: best
     youtube-dl quality or format of video. See FORMAT SELECTION in the man page.
   
-  seconds : int, Default: 10 seconds
+  time_length : int, Default: 10 seconds
     Length of video to download.
 
   wait : bool, Default: True
@@ -64,7 +75,13 @@ def download_ydl_ffmpeg(place, url, quality="best", time="00:00:10.00", wait=Tru
   Returns
   -------
   Popen subprocess object representing ffmpeg download or youtube-dl process
-  if failed to retrieve manifest file.
+  if failed to retrieve manifest file and download path.
+
+  Side Effects
+  ------------
+  files: 
+    mp4 video saved to dir
+    log file containing output from ffmpeg saved to dir
   '''
   # https://unix.stackexchange.com/questions/230481/how-to-download-portion-of-video-with-youtube-dl-command
   now = datetime.datetime.now()
@@ -78,26 +95,27 @@ def download_ydl_ffmpeg(place, url, quality="best", time="00:00:10.00", wait=Tru
   manifests = p_manifest.communicate()[0].decode().strip().split()
   if len(manifests) == 0:
     print(f"[Error] livestream/video not available for {place} {url}")
-    return p_manifest
+    return p_manifest, ""
   manifest = manifests[0]
   download_path = os.path.join(dir, place+"_"+time_str+".mp4")
-  print(f"Downloading from: {manifest}")
   print(f"Downloading to: {download_path}")
   ffmpeg_args = ['ffmpeg',
                  "-f", "hls",       # input format is hls
                  '-i', manifest,    # input manifest file link
-                 '-t', time,        # time length to record for
+                 '-t', time_length,        # time length to record for
                  '-c', "copy",      # copy original codec
                  '-an',             # discard audio
                  download_path]
+  print("Command:", " ".join(ffmpeg_args))
+  log = open(download_path+".log", "x")
   p_ffmpeg = subprocess.Popen(ffmpeg_args,
                               stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE,
+                              stdout=log,
                               stderr=subprocess.STDOUT,
                               text=True)
   if wait:
     p_ffmpeg.wait()
-  return p_ffmpeg
+  return p_ffmpeg, download_path
 
 def find_rainy_places(spreadsheet: gspread.models.Spreadsheet):
   '''
@@ -137,17 +155,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet):
         places[city] = [url, "best"]
   return places
 
-def print_stdout(process):
-  '''
-  Prints out stdout of a subprocess
-  '''
-  try:
-    for line in process.stdout:
-      print(line.rstrip())
-  except:
-    return
-
-def download(places, tmp_dir="./tmp", final_dir="./downloads"):
+def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
   '''
   auto-downloader logic
 
@@ -155,6 +163,9 @@ def download(places, tmp_dir="./tmp", final_dir="./downloads"):
   ----------
   places : dict
     places dictionary in the same format as find_rainy_places()
+
+  seconds : int
+    length of time in seconds for video length
   
   tmp_dir : str
     temporary directory where files are downloaded before being moved
@@ -170,7 +181,7 @@ def download(places, tmp_dir="./tmp", final_dir="./downloads"):
   
   # remove any partially downloaded files in the temporary directory
   # if they exist from a previous run
-  subprocess.call([f"rm -f {tmp_dir_globall}"], shell=True)
+  # subprocess.call([f"rm -f {tmp_dir_globall}"], shell=True)
 
   # create new permanent folder
   now = datetime.datetime.now()
@@ -178,20 +189,45 @@ def download(places, tmp_dir="./tmp", final_dir="./downloads"):
   folder_path = os.path.join(final_dir, folder_day_name)
   pathlib.Path(folder_path).mkdir(parents=True, exist_ok=True)
 
+  # convert time to string format
+  time_length_str = time.strftime('%H:%M:%S', time.gmtime(seconds))
+
   # download from livestreams in places dictionary
   processes = [download_ydl_ffmpeg(place,
                                    url, 
                                    quality,
-                                   "00:02:00.00", 
+                                   time_length_str, 
                                    wait=False, 
                                    dir=tmp_dir) \
                for place, (url, quality) in places.items()]
+  start_time = time.time()
   print(f"Attempting download of {len(processes)} video(s).")
-  print([p.wait() for p in processes])
-  [print_stdout(p) for p in processes]
+
+  # Sometimes downloads go into an infinite loop. To mitigate this,
+  # this while loop constantly checks the return codes to see if the
+  # processes have completed. If one of the processes exceeds
+  # 1.5*seconds+60, the process is killed and its temporary file removed.
+  while True:
+    time.sleep(1)
+    return_codes = [p.poll() for p, _ in processes]
+    return_codes_not_None = [r for r in return_codes if r is not None]
+    if len(return_codes_not_None) == len(processes):
+      break
+    elif time.time() > start_time + 1.25*seconds + 60:
+      for p, download_path in processes:
+        if p.returncode != 0:
+          print("Killing...")
+          p.kill()
+          p.wait()
+          subprocess.call([f"rm -f {download_path}"], shell=True)
+      break
+  
+  print([p.wait() for p, _ in processes])
 
   # move downloaded videos from temporary directory to permanent directory
-  subprocess.call([f"mv {tmp_dir_globall} {folder_path}"], shell=True)
+  for _, download_path in processes:
+    subprocess.call([f"mv {download_path} {folder_path}"], shell=True)
+  return folder_path
 
 
 def main():
@@ -206,13 +242,25 @@ def main():
   gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
   while True:
-      spreadsheet = gc.open("webcam-links")
       try:
+          spreadsheet = gc.open("webcam-links")
           places = find_rainy_places(spreadsheet)
       except:
+          print('Error opening spreadsheet or gettng rainy places')
           time.sleep(30)
           continue
-      download(places)
+      download(places, seconds=120)
+
+def test():
+  '''
+  Test function for downloader
+  '''
+  places = {"TEST": ["https://www.youtube.com/watch?v=xSjORzAWP1Y", "best"]}
+  download(places)
+
 
 if __name__ == "__main__":
-    main()
+    if TEST:
+      test()
+    else:
+      main()
