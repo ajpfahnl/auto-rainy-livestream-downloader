@@ -241,15 +241,24 @@ def main():
   '''
   gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
+  # In this pipeline we also want to download a video without rain immediately
+  # after it rains. To do this, after every download, we create a dictionary
+  # of places to download by updating the previous rainy dictionary with a
+  # current rainy places dictionary. If a location had rain in the previous
+  # iteration but doesn't have rain now, that location will continue
+  # downloading for at least one more iteration.
+  places_rainy_old = {}
   while True:
       try:
           spreadsheet = gc.open("webcam-links")
-          places = find_rainy_places(spreadsheet)
+          places_rainy_new = find_rainy_places(spreadsheet)
+          places_to_download = places_rainy_old | places_rainy_new
       except:
           print('Error opening spreadsheet or gettng rainy places')
           time.sleep(30)
           continue
-      download(places, seconds=120)
+      download(places_to_download, seconds=120)
+      places_rainy_old = places_rainy_new
 
 def test():
   '''
