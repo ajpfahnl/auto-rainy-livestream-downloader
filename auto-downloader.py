@@ -226,11 +226,11 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
 		download_ydl_ffmpeg(
 			place,
 			url, 
-            quality,
-            time_length_str, 
-            wait=False, 
-            dir=tmp_dir) \
-        for place, (url, quality) in places.items()]
+			quality,
+			time_length_str, 
+			wait=False, 
+			dir=tmp_dir) \
+		for place, (url, quality) in places.items()]
 	
 	start_time = time.time()
 	print(f"Attempting download of {len(processes)} video(s).")
