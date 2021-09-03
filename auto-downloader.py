@@ -213,7 +213,7 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
 	# subprocess.call([f"rm -f {tmp_dir_globall}"], shell=True)
 
 	# create new permanent folder
-	now = datetime.datetime.now()
+	now = datetime.datetime.utcnow()
 	folder_day_name = f"{now.year:04}-{now.month:02}-{now.day:02}"
 	folder_path = os.path.join(final_dir, folder_day_name)
 	pathlib.Path(folder_path).mkdir(parents=True, exist_ok=True)
