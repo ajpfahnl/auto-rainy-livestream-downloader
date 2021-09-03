@@ -6,6 +6,10 @@ import subprocess
 import gspread
 import time
 import datetime
+from timezonefinder import TimezoneFinder
+import pytz
+import astral
+from astral.sun import sun
 
 dotenv.load_dotenv()
 API_KEYS=os.getenv('API_KEYS').split(",")
@@ -124,7 +128,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
 		p_ffmpeg.wait()
 	return p_ffmpeg, download_path
 
-def find_rainy_places(spreadsheet: gspread.models.Spreadsheet):
+def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
 	'''
 	Return a dictionary of places and their Youtube URLs that currently have rain
 
@@ -153,13 +157,25 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet):
 		rows = spreadsheet.get_worksheet(i).get_all_values()
 		for row in rows[1:]:
 			city, lat, lon, url = row
-			try:
-				raining = is_raining(lat, lon, API_KEYS[0])
-			except:
-				raining = is_raining(lat, lon, API_KEYS[1])
-			if raining:
-				print(f"\t{city} has rain")
-				places[city] = [url, "best"]
+			if lat == '' or lon == '':
+				print("\tlatitude or longitude not specified. Skipping...")
+			elif daytime:
+				timezone_str = TimezoneFinder().timezone_at(lng=float(lon), lat=float(lat))
+				loc = astral.LocationInfo(name='loc', region='region', timezone=timezone_str,
+                	latitude=lat, longitude=lon)
+				timezone_tzinfo = pytz.timezone(timezone_str)
+				s = sun(loc.observer, date=datetime.datetime.now(), tzinfo=loc.timezone)
+				hour = datetime.datetime.now(timezone_tzinfo).hour
+				if (hour < s['sunrise'].hour) or (hour > s['sunset'].hour):
+					print(f"\t{city} is dark")
+			else:
+				try:
+					raining = is_raining(lat, lon, API_KEYS[0])
+				except:
+					raining = is_raining(lat, lon, API_KEYS[1])
+				if raining:
+					print(f"\t{city} has rain")
+					places[city] = [url, "best"]
 	return places
 
 def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
@@ -231,13 +247,14 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
 					p.wait()
 					subprocess.call([f"rm -f {download_path}"], shell=True)
 			break
-	 
-	print([p.wait() for p, _ in processes])
+	
+	exit_codes = [p.wait() for p, _ in processes]
+	print(exit_codes)
 
 	# move downloaded videos from temporary directory to permanent directory
 	for _, download_path in processes:
 		subprocess.call([f"mv {download_path} {folder_path}"], shell=True)
-	return folder_path
+	return exit_codes, folder_path
 
 
 def main():
@@ -264,11 +281,15 @@ def main():
 			places_rainy_new = find_rainy_places(spreadsheet)
 			places_to_download = places_rainy_old | places_rainy_new
 		except:
-			print('Error opening spreadsheet or gettng rainy places')
+			print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
 			time.sleep(30)
 			continue
-		download(places_to_download, seconds=120)
-		places_rainy_old = places_rainy_new
+		exit_codes, _ = download(places_to_download, seconds=120)
+		if len(exit_codes) == 0:
+			print("No videos to download, waiting 60 seconds...")
+			time.sleep(60)
+		else:
+			places_rainy_old = places_rainy_new
 
 def test():
 	'''
