@@ -88,7 +88,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
 		log file containing output from ffmpeg saved to dir
 	'''
 	# https://unix.stackexchange.com/questions/230481/how-to-download-portion-of-video-with-youtube-dl-command
-	now = datetime.datetime.now()
+	now = datetime.datetime.utcnow()
 	time_str = f"{now.year:04}-{now.month:02}-{now.day:02}_{now.hour:02}-{now.minute:02}-{now.second:02}"
 
 	youtube_dl_args = [
