@@ -157,9 +157,14 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
 		rows = spreadsheet.get_worksheet(i).get_all_values()
 		for row in rows[1:]:
 			city, lat, lon, url = row
+
+			# skip if no latitude or longitude
 			if lat == '' or lon == '':
 				print("\tlatitude or longitude not specified. Skipping...")
-			elif daytime:
+				continue
+
+			# skip if daytime specified and location has no daylight
+			if daytime:
 				timezone_str = TimezoneFinder().timezone_at(lng=float(lon), lat=float(lat))
 				loc = astral.LocationInfo(name='loc', region='region', timezone=timezone_str,
                 	latitude=lat, longitude=lon)
@@ -168,14 +173,16 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
 				hour = datetime.datetime.now(timezone_tzinfo).hour
 				if (hour < s['sunrise'].hour) or (hour > s['sunset'].hour):
 					print(f"\t{city} is dark")
-			else:
-				try:
-					raining = is_raining(lat, lon, API_KEYS[0])
-				except:
-					raining = is_raining(lat, lon, API_KEYS[1])
-				if raining:
-					print(f"\t{city} has rain")
-					places[city] = [url, "best"]
+					continue
+			
+			# download if location is raining
+			try:
+				raining = is_raining(lat, lon, API_KEYS[0])
+			except:
+				raining = is_raining(lat, lon, API_KEYS[1])
+			if raining:
+				print(f"\t{city} has rain")
+				places[city] = [url, "best"]
 	return places
 
 def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
