@@ -166,8 +166,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
 			# skip if daytime specified and location has no daylight
 			if daytime:
 				timezone_str = TimezoneFinder().timezone_at(lng=float(lon), lat=float(lat))
-				loc = astral.LocationInfo(name='loc', region='region', timezone=timezone_str,
-                	latitude=lat, longitude=lon)
+				loc = astral.LocationInfo(name='loc', region='region', timezone=timezone_str, latitude=lat, longitude=lon)
 				timezone_tzinfo = pytz.timezone(timezone_str)
 				s = sun(loc.observer, date=datetime.datetime.now(), tzinfo=loc.timezone)
 				hour = datetime.datetime.now(timezone_tzinfo).hour
