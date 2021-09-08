@@ -1,5 +1,6 @@
 google-sheet-service-auth.json
 tmp/
+copy_to_drive.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
