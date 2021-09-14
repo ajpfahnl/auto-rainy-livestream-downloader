@@ -48,3 +48,41 @@ Region: Southern_NA
 	Winter_Garden has rain
 ...
 ```
+
+## Filtering
+NOTE: this is still a WIP
+`filter.py` uses modified z-scores to determine outliers in a video that might be indicative of rain. Based on a threshold, a video is classified as rainy or not rainy. The current format for calling the script is as follows:
+```
+usage: filter.py [-h] [--plot] [-f FRAMES] [--rgb] [-t THRESHOLD] folder
+
+filters rainy and non-rainy videos
+
+positional arguments:
+  folder                folder with videos
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --plot                displays plots of the histogram of intensities for each video
+  -f FRAMES, --frames FRAMES
+                        frames to process, defaults to all frames
+  --rgb                 process rgb channels separately
+  -t THRESHOLD, --threshold THRESHOLD
+                        threshold for the percentage of outliers to be considered rain drops, default is 2.0 (e.g. 2.0%)
+```
+The following is an example of running the script:
+```console
+$ python3 filter.py ./sample_data --plot
+processing Greencastle_2021-09-09_12-58-45_clean.mp4
+        number of outliers: 96, total number of intensities: 7200, percent outliers: 1.33
+        mean: 120.60, std: 10.11
+        not rainy
+processing Greencastle_2021-09-09_12-20-14_rainy.mp4
+        number of outliers: 366, total number of intensities: 7200, percent outliers: 5.08
+        mean: 123.42, std: 14.46
+        rainy
+```
+### clean image histogram:
+<img src="./images/Greencastle_clean.png" width="500">
+
+### rainy image histogram:
+<img src="./images/Greencastle_rainy.png" width="500">
