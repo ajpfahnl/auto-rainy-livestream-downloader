@@ -16,7 +16,7 @@ def mod_z(col: np.array, thresh: float=3.5) -> np.array:
     mod_z = mod_z[np.abs(mod_z) < thresh]
     return np.abs(mod_z)
 
-def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb=False, show_figs=False) -> bool:
+def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb: bool=False, show_figs: bool=False, bins: int=15) -> bool:
     '''
     NOTE: if seq_len is negative, all frames will be used
     '''
@@ -58,7 +58,6 @@ def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb=Fal
     rainy = True if percent_outliers >= thresh else False
 
     if show_figs:
-        bins = 100
         if rgb:
             plt_dims = (3, 1)
             fig, axs = plt.subplots(*plt_dims)
@@ -74,25 +73,23 @@ def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb=Fal
             plt.show()
 
     return rainy, mu, sigma
-    
-
-
 
 def main():
     parser = argparse.ArgumentParser(description='filters rainy and non-rainy videos')
     parser.add_argument('folder', help='folder with videos')
-    parser.add_argument('--plot', dest='plot_bool', default=False, action='store_true', help='displays plots of the histogram of intensities for each video')
     parser.add_argument('-f', '--frames', type=int, default=-1, help='frames to process, defaults to all frames')
     parser.add_argument('--rgb', default=False, action='store_true', help='process rgb channels separately')
     parser.add_argument('-t', '--threshold', type=float, default=2.0, help='threshold for the percentage of outliers to be considered rain drops, default is 2.0 (e.g. 2.0%%)')
+    parser.add_argument('--plot', dest='plot_bool', default=False, action='store_true', help='displays plots of the histogram of intensities for each video')
+    parser.add_argument('-b', '--bins', type=int, default=15, help='number of bins to display in the histogram plots')
     args = parser.parse_args()
-    folder, plot_bool, frames, rgb, threshold = args.folder, args.plot_bool, args.frames, args.rgb, args.threshold
+    folder, plot_bool, frames, rgb, threshold, bins = args.folder, args.plot_bool, args.frames, args.rgb, args.threshold, args.bins
     for file in os.listdir(folder):
         print(f"processing {file}")
         cap = cv2.VideoCapture(os.path.join(folder, file))
         if (int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) == 0):
             continue
-        rainy, mu, sigma = is_rainy_video(cap, frames, threshold, rgb, plot_bool)
+        rainy, mu, sigma = is_rainy_video(cap, frames, threshold, rgb, plot_bool, bins)
         print(f"\tmean: {mu:.2f}, std: {sigma:.2f}")
         print("\trainy") if rainy else print("\tnot rainy")
 
