@@ -6,6 +6,10 @@ import argparse
 import matplotlib.pyplot as plt
 
 def mod_z(col: np.array, thresh: float=3.5) -> np.array:
+    '''
+    Calculates modified z-score.
+    Implementation modified from this SO post: https://stackoverflow.com/a/58128516
+    '''
     med_col = np.median(col)
     med_abs_dev = np.median(np.abs(col - med_col))
     mod_z = 0.7413 * ((col - med_col) / med_abs_dev)
