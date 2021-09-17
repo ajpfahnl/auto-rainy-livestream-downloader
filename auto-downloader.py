@@ -156,7 +156,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
 		print(f"Region: {title}")
 		rows = spreadsheet.get_worksheet(i).get_all_values()
 		for row in rows[1:]:
-			city, lat, lon, url = row
+			city, lat, lon, url = row[0:4]
 
 			# skip if no latitude or longitude
 			if lat == '' or lon == '':
