@@ -258,8 +258,10 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
 	print(exit_codes)
 
 	# move downloaded videos from temporary directory to permanent directory
-	for _, download_path in processes:
-		subprocess.call([f"mv {download_path} {folder_path}"], shell=True)
+	# only if successfully downlaoded (exit code 0)
+	for exit_code, download_path in processes:
+		if exit_code == 0:
+			subprocess.call([f"mv {download_path} {folder_path}"], shell=True)
 	return exit_codes, folder_path
 
 
