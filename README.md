@@ -53,7 +53,7 @@ Region: Southern_NA
 NOTE: this is still a WIP
 `filter.py` uses modified z-scores to determine outliers in a video that might be indicative of rain. Based on a threshold, a video is classified as rainy or not rainy. The current format for calling the script is as follows:
 ```
-usage: filter.py [-h] [--plot] [-f FRAMES] [--rgb] [-t THRESHOLD] folder
+usage: filter.py [-h] [-f FRAMES] [--rgb] [-t THRESHOLD] [--plot] [-b BINS] [--csv] folder
 
 filters rainy and non-rainy videos
 
@@ -62,12 +62,14 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --plot                displays plots of the histogram of intensities for each video
   -f FRAMES, --frames FRAMES
                         frames to process, defaults to all frames
   --rgb                 process rgb channels separately
   -t THRESHOLD, --threshold THRESHOLD
                         threshold for the percentage of outliers to be considered rain drops, default is 2.0 (e.g. 2.0%)
+  --plot                displays plots of the histogram of intensities for each video
+  -b BINS, --bins BINS  number of bins to display in the histogram plots
+  --csv                 output csv format
 ```
 The following is an example of running the script:
 ```console
@@ -86,3 +88,18 @@ processing Greencastle_2021-09-09_12-20-14_rainy.mp4
 
 ### rainy image histogram:
 <img src="./images/Greencastle_rainy.png" width="500">
+
+The following is an example of how to create a csv file:
+```console
+$ python3 filter.py downloads/2021-09-18 --csv > 2021-09-18.csv
+processing Auron_Ski_2021-09-18_15-03-14.mp4
+processing Revelstoke_2021-09-18_15-10-19.mp4
+processing Geiranger_2021-09-18_16-53-48.mp4
+processing Revelstoke_2021-09-18_16-49-10.mp4
+$ cat 2021-09-18.csv
+file,rainy,mean,std,outlier count,total intensities,percent outliers
+Auron_Ski_2021-09-18_15-03-14.mp4,False,129.83,38.29,5,3600,0.14
+Revelstoke_2021-09-18_15-10-19.mp4,False,58.56,7.94,0,7200,0.00
+Geiranger_2021-09-18_16-53-48.mp4,True,66.91,4.20,150,3600,4.17
+Revelstoke_2021-09-18_16-49-10.mp4,False,57.07,5.09,0,7200,0.00
+```

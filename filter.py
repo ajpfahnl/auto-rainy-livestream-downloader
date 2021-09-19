@@ -4,6 +4,7 @@ import os
 import cv2
 import argparse
 import matplotlib.pyplot as plt
+import sys
 
 def mod_z(col: np.array, thresh: float=3.5) -> np.array:
     '''
@@ -53,7 +54,6 @@ def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb: bo
     mz_filtered = mz[mz >= 0]
     outliers = frame_count - len(mz_filtered)
     percent_outliers = outliers/frame_count * 100
-    print(f"\tnumber of outliers: {outliers}, total number of intensities: {frame_count}, percent outliers: {percent_outliers:.2f}")
 
     rainy = True if percent_outliers >= thresh else False
 
@@ -72,7 +72,7 @@ def is_rainy_video(cap: cv2.VideoCapture, seq_len: int, thresh: float=2, rgb: bo
             plt.plot([mu-sigma, mu+sigma], [0,0], 'o', color="orange")
             plt.show()
 
-    return rainy, mu, sigma
+    return rainy, mu, sigma, outliers, frame_count, percent_outliers
 
 def main():
     parser = argparse.ArgumentParser(description='filters rainy and non-rainy videos')
@@ -82,16 +82,26 @@ def main():
     parser.add_argument('-t', '--threshold', type=float, default=2.0, help='threshold for the percentage of outliers to be considered rain drops, default is 2.0 (e.g. 2.0%%)')
     parser.add_argument('--plot', dest='plot_bool', default=False, action='store_true', help='displays plots of the histogram of intensities for each video')
     parser.add_argument('-b', '--bins', type=int, default=15, help='number of bins to display in the histogram plots')
+    parser.add_argument('--csv', default=False, action='store_true', help='output csv format')
     args = parser.parse_args()
-    folder, plot_bool, frames, rgb, threshold, bins = args.folder, args.plot_bool, args.frames, args.rgb, args.threshold, args.bins
+    folder, plot_bool, frames, rgb, threshold, bins, csv_bool = args.folder, args.plot_bool, args.frames, args.rgb, args.threshold, args.bins, args.csv
+
+    if csv_bool:
+        print('file,rainy,mean,std,outlier count,total intensities,percent outliers')
+
     for file in os.listdir(folder):
-        print(f"processing {file}")
+        print(f"processing {file}", file=sys.stderr)
         cap = cv2.VideoCapture(os.path.join(folder, file))
         if (int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) == 0):
             continue
-        rainy, mu, sigma = is_rainy_video(cap, frames, threshold, rgb, plot_bool, bins)
-        print(f"\tmean: {mu:.2f}, std: {sigma:.2f}")
-        print("\trainy") if rainy else print("\tnot rainy")
+        rainy, mu, sigma, outliers, total_intensities, percent_outliers = is_rainy_video(cap, frames, threshold, rgb, plot_bool, bins)
+        if not csv_bool:
+            print(f"\tnumber of outliers: {outliers}, total number of intensities: {total_intensities}, percent outliers: {percent_outliers:.2f}")
+            print(f"\tmean: {mu:.2f}, std: {sigma:.2f}")
+            print("\trainy") if rainy else print("\tnot rainy")
+        else:
+            print(f'{file},{rainy},{mu:.2f},{sigma:.2f},{outliers},{total_intensities},{percent_outliers:.2f}')
+            sys.stdout.flush()
 
 if __name__ == "__main__":
     main()
