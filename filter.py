@@ -89,7 +89,7 @@ def main():
     if csv_bool:
         print('file,rainy,mean,std,outlier count,total intensities,percent outliers')
 
-    for file in os.listdir(folder):
+    for file in sorted(os.listdir(folder)):
         print(f"processing {file}", file=sys.stderr)
         cap = cv2.VideoCapture(os.path.join(folder, file))
         if (int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) == 0):
