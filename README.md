@@ -53,7 +53,7 @@ Region: Southern_NA
 NOTE: this is still a WIP
 `filter.py` uses modified z-scores to determine outliers in a video that might be indicative of rain. Based on a threshold, a video is classified as rainy or not rainy. The current format for calling the script is as follows:
 ```
-usage: filter.py [-h] [-f FRAMES] [--rgb] [-t THRESHOLD] [--plot] [-b BINS] [--csv] folder
+usage: filter.py [-h] [-f FRAMES] [-t THRESHOLD] [-w n] [--plot] [-b BINS] [--csv] folder
 
 filters rainy and non-rainy videos
 
@@ -64,9 +64,9 @@ optional arguments:
   -h, --help            show this help message and exit
   -f FRAMES, --frames FRAMES
                         frames to process, defaults to all frames
-  --rgb                 process rgb channels separately
   -t THRESHOLD, --threshold THRESHOLD
                         threshold for the percentage of outliers to be considered rain drops, default is 2.0 (e.g. 2.0%)
+  -w n, --window n      nxn window of pixels in center of image to process. Default is 2x2.
   --plot                displays plots of the histogram of intensities for each video
   -b BINS, --bins BINS  number of bins to display in the histogram plots
   --csv                 output csv format
