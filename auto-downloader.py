@@ -289,7 +289,7 @@ def main():
         try:
             spreadsheet = gc.open("webcam-links")
             places_rainy_new = find_rainy_places(spreadsheet)
-            
+
             # New Python syntax
             # places_to_download = places_rainy_old | places_rainy_new
 
