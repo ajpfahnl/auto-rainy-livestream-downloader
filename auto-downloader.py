@@ -124,8 +124,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         ffmpeg_args,
         stdin=subprocess.DEVNULL,
         stdout=log,
-        stderr=subprocess.STDOUT,
-        text=True)
+        stderr=subprocess.STDOUT)
     if wait:
         p_ffmpeg.wait()
     return p_ffmpeg, download_path
