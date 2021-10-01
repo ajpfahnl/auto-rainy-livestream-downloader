@@ -12,6 +12,7 @@ from timezonefinder import TimezoneFinder
 import pytz
 import astral
 from astral.sun import sun
+import traceback
 
 dotenv.load_dotenv()
 API_KEYS=os.getenv('API_KEYS').split(",")
@@ -290,6 +291,7 @@ def main():
             places_rainy_new = find_rainy_places(spreadsheet)
             places_to_download = places_rainy_old | places_rainy_new
         except:
+            print(traceback.format_exc())
             print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
             time.sleep(30)
             continue
