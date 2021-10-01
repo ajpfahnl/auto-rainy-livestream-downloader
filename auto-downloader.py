@@ -289,7 +289,11 @@ def main():
         try:
             spreadsheet = gc.open("webcam-links")
             places_rainy_new = find_rainy_places(spreadsheet)
-            places_to_download = places_rainy_old | places_rainy_new
+            
+            # New Python syntax
+            # places_to_download = places_rainy_old | places_rainy_new
+
+            places_to_download = {**places_rainy_old, **places_rainy_new}
         except:
             print(traceback.format_exc())
             print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
