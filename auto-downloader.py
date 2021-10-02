@@ -93,7 +93,12 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
     # https://unix.stackexchange.com/questions/230481/how-to-download-portion-of-video-with-youtube-dl-command
     now = datetime.datetime.utcnow()
     time_str = f"{now.year:04}-{now.month:02}-{now.day:02}_{now.hour:02}-{now.minute:02}-{now.second:02}"
+    download_path = os.path.join(dir, place+"_"+time_str+".mp4")
+    
+    # create log
+    log = open(download_path+".log", "x")
 
+    # get manifest with youtube-dl
     youtube_dl_args = [
         'youtube-dl',
         '--youtube-skip-dash-manifest',
@@ -103,13 +108,15 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         youtube_dl_args,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL)
+        stderr=log)
     manifests = p_manifest.communicate()[0].decode().strip().split()
     if len(manifests) == 0:
         print(f"[Error] livestream/video not available for {place} {url}")
+        log.close()
         return p_manifest, ""
     manifest = manifests[0]
-    download_path = os.path.join(dir, place+"_"+time_str+".mp4")
+
+    # download with ffmpeg
     print(f"Downloading to: {download_path}")
     ffmpeg_args = [
         'ffmpeg',
@@ -120,7 +127,6 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         '-an',             # discard audio
         download_path]
     print("Command:", " ".join(ffmpeg_args))
-    log = open(download_path+".log", "x")
     p_ffmpeg = subprocess.Popen(
         ffmpeg_args,
         stdin=subprocess.DEVNULL,
@@ -128,6 +134,8 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         stderr=subprocess.STDOUT)
     if wait:
         p_ffmpeg.wait()
+    
+    log.close()
     return p_ffmpeg, download_path
 
 def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
