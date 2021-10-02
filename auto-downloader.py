@@ -15,8 +15,8 @@ from astral.sun import sun
 import traceback
 
 dotenv.load_dotenv()
-API_KEYS=os.getenv('API_KEYS').split(",")
-TEST=False
+API_KEYS = os.getenv('API_KEYS').split(",")
+TEST = True if os.getenv('TEST').lower() == 'true' else False
 
 def is_raining(lat, lon, api_key):
     '''
