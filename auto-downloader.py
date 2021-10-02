@@ -303,6 +303,9 @@ def main():
         if len(exit_codes) == 0:
             print("No videos to download, waiting 60 seconds...")
             time.sleep(60)
+        elif 0 not in exit_codes:
+            print("All videos failed to download, waiting 60 seconds...")
+            time.sleep(60)
         else:
             places_rainy_old = places_rainy_new
 
