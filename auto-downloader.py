@@ -287,7 +287,7 @@ def main():
     '''
     parser = argparse.ArgumentParser(description='downloads rainy videos from a spreadsheet with livestream links')
     parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
-    parser.add_argument('-nt', '--notimeout', type=bool, default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
+    parser.add_argument('-nt', '--notimeout', default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
     args = parser.parse_args()
     downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
     timeout = not args.notimeout
