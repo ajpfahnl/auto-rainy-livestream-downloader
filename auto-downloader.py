@@ -197,7 +197,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
                 places[city] = [url, "best"]
     return places
 
-def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=pathlib.PosixPath("./downloads")):
+def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=pathlib.PosixPath("./downloads"), timeout=True):
     '''
     auto-downloader logic
 
@@ -250,7 +250,7 @@ def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=p
     # this while loop constantly checks the return codes to see if the
     # processes have completed. If one of the processes exceeds
     # 1.5*seconds+60, the process is killed and its temporary file removed.
-    while True:
+    while True and not timeout:
         time.sleep(1)
         return_codes = [p.poll() for p, _ in processes]
         return_codes_not_None = [r for r in return_codes if r is not None]
@@ -285,10 +285,12 @@ def main():
     opens spreadsheet titled "webcam-links", finds places with rain, and
         downloads in a continous loop
     '''
-    parser = argparse.ArgumentParser(description='filters rainy and non-rainy videos')
+    parser = argparse.ArgumentParser(description='downloads rainy videos from a spreadsheet with livestream links')
     parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
+    parser.add_argument('-nt', '--notimeout', type=bool, default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
     args = parser.parse_args()
     downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
+    timeout = not args.notimeout
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
@@ -313,7 +315,7 @@ def main():
             print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
             time.sleep(30)
             continue
-        exit_codes, _ = download(places_to_download, seconds=120, final_dir=downloads_folder)
+        exit_codes, _ = download(places_to_download, seconds=120, final_dir=downloads_folder, timeout=timeout)
         if len(exit_codes) == 0:
             print("No videos to download, waiting 60 seconds...")
             time.sleep(60)
