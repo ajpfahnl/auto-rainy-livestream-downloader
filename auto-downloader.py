@@ -288,7 +288,7 @@ def main():
     parser = argparse.ArgumentParser(description='filters rainy and non-rainy videos')
     parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
     args = parser.parse_args()
-    downloads_folder = pathlib.PosixPath(args.folder).expanduser()
+    downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
