@@ -13,6 +13,7 @@ import pytz
 import astral
 from astral.sun import sun
 import traceback
+import argparse
 
 dotenv.load_dotenv()
 API_KEYS = os.getenv('API_KEYS').split(",")
@@ -54,7 +55,7 @@ def print_stdout(process):
     except:
         return
 
-def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", wait=True, dir="downloads/"):
+def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time_length="00:00:10.00", wait=True):
     '''
     Downloading a video with youtube-dl and ffmpeg
 
@@ -66,6 +67,9 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
     url : str
         video URL
       
+    dir : pathlib.PosixPath
+        directory for the video downloads
+
     quality : str, Default: best
         youtube-dl quality or format of video. See FORMAT SELECTION in the man page.
         
@@ -76,13 +80,11 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         whether to wait for the download process to finish or not. If false, make
         sure to wait for the returned process to finish executing.
     
-    dir : str, Default: downloads/ (in current working directory)
-        directory for the video downloads
-    
     Returns
     -------
     Popen subprocess object representing ffmpeg download or youtube-dl process
-    if failed to retrieve manifest file and download path.
+    if failed to retrieve manifest file and download path AND download path
+    represented as pathlib.PosixPath object.
 
     Side Effects
     ------------
@@ -93,10 +95,11 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
     # https://unix.stackexchange.com/questions/230481/how-to-download-portion-of-video-with-youtube-dl-command
     now = datetime.datetime.utcnow()
     time_str = f"{now.year:04}-{now.month:02}-{now.day:02}_{now.hour:02}-{now.minute:02}-{now.second:02}"
-    download_path = os.path.join(dir, place+"_"+time_str+".mp4")
+    download_path = dir / (place+'_'+time_str+'.mp4')
+    log_path = dir / (place+'_'+time_str+'.log')
     
     # create log
-    log = open(download_path+".log", "x")
+    log = open(log_path, "x")
 
     # get manifest with youtube-dl
     youtube_dl_args = [
@@ -113,7 +116,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
     if len(manifests) == 0:
         print(f"[Error] livestream/video not available for {place} {url}")
         log.close()
-        return p_manifest, ""
+        return p_manifest, download_path
     manifest = manifests[0]
 
     # download with ffmpeg
@@ -125,7 +128,7 @@ def download_ydl_ffmpeg(place, url, quality="best", time_length="00:00:10.00", w
         '-t', time_length, # time length to record for
         '-c', "copy",      # copy original codec
         '-an',             # discard audio
-        download_path]
+        str(download_path)]
     print("Command:", " ".join(ffmpeg_args))
     p_ffmpeg = subprocess.Popen(
         ffmpeg_args,
@@ -194,7 +197,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
                 places[city] = [url, "best"]
     return places
 
-def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
+def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=pathlib.PosixPath("./downloads")):
     '''
     auto-downloader logic
 
@@ -206,27 +209,25 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
     seconds : int
         length of time in seconds for video length
       
-    tmp_dir : str
+    tmp_dir : pathlib.PosixPath
         temporary directory where files are downloaded before being moved
         to the permanent final_dir
 
-    final_dir : str
+    final_dir : pathlib.PosixPath
         final directory where compeleted downloads are stored
+    
+    Returns
+    -------
+    array of exit codes AND folder path (pathlib.PosixPath) for the downloads
     '''
-
     # create temporary directory if it doesn't exist
-    pathlib.Path(tmp_dir).mkdir(parents=True, exist_ok=True)
-
-    # remove any partially downloaded files in the temporary directory
-    # if they exist from a previous run
-    # tmp_dir_globall = os.path.join(tmp_dir, "*")
-    # subprocess.call([f"rm -f {tmp_dir_globall}"], shell=True)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
 
     # create new permanent folder
     now = datetime.datetime.utcnow()
     folder_day_name = f"{now.year:04}-{now.month:02}-{now.day:02}"
-    folder_path = os.path.join(final_dir, folder_day_name)
-    pathlib.Path(folder_path).mkdir(parents=True, exist_ok=True)
+    folder_path = final_dir / folder_day_name
+    folder_path.mkdir(parents=True, exist_ok=True)
 
     # convert time to string format
     time_length_str = time.strftime('%H:%M:%S', time.gmtime(seconds))
@@ -236,10 +237,10 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
         download_ydl_ffmpeg(
             place,
             url, 
+            tmp_dir,
             quality,
             time_length_str, 
-            wait=False, 
-            dir=tmp_dir) \
+            wait=False) \
         for place, (url, quality) in places.items()]
     
     start_time = time.time()
@@ -261,7 +262,7 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
                     print("Killing...")
                     p.kill()
                     p.wait()
-                    subprocess.call([f"rm -f {download_path}"], shell=True)
+                    subprocess.call([f"rm -f '{download_path}'"], shell=True)
             break
     
     exit_codes = [p.wait() for p, _ in processes]
@@ -271,7 +272,7 @@ def download(places, seconds=10, tmp_dir="./tmp", final_dir="./downloads"):
     # only if successfully downlaoded (exit code 0)
     for i, (_, download_path) in enumerate(processes):
         if exit_codes[i] == 0:
-            subprocess.call([f"mv {download_path} {folder_path}"], shell=True)
+            subprocess.call([f"mv '{download_path}' '{folder_path}'"], shell=True)
     return exit_codes, folder_path
 
 
@@ -284,6 +285,11 @@ def main():
     opens spreadsheet titled "webcam-links", finds places with rain, and
         downloads in a continous loop
     '''
+    parser = argparse.ArgumentParser(description='filters rainy and non-rainy videos')
+    parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
+    args = parser.parse_args()
+    downloads_folder = pathlib.PosixPath(args.folder).expanduser()
+
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
     # In this pipeline we also want to download a video without rain immediately
@@ -307,7 +313,7 @@ def main():
             print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
             time.sleep(30)
             continue
-        exit_codes, _ = download(places_to_download, seconds=120)
+        exit_codes, _ = download(places_to_download, seconds=120, final_dir=downloads_folder)
         if len(exit_codes) == 0:
             print("No videos to download, waiting 60 seconds...")
             time.sleep(60)
@@ -322,7 +328,7 @@ def test():
     Test function for downloader
     '''
     places = {"TEST": ["https://www.youtube.com/watch?v=xSjORzAWP1Y", "best"]}
-    download(places)
+    download(places, final_dir=pathlib.PosixPath('~/Downloads/test/').expanduser())
 
 
 if __name__ == "__main__":
