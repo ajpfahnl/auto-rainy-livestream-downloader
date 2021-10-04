@@ -170,10 +170,17 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
         rows = spreadsheet.get_worksheet(i).get_all_values()
         for row in rows[1:]:
             city, lat, lon, url = row[0:4]
+            print(f"\t{(city + ':').ljust(20)} ", end='')
+
+            # check for forced skip in "Not Usable" column indicated by a case-insensitive 'X'
+            if len(row) > 4:
+                if row[4].strip().lower() == 'x':
+                    print("SKIP - forced")
+                    continue
 
             # skip if no latitude or longitude
             if lat == '' or lon == '':
-                print("\tlatitude or longitude not specified. Skipping...")
+                print("SKIP - latitude or longitude not specified")
                 continue
 
             # skip if daytime specified and location has no daylight
@@ -184,7 +191,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
                 s = sun(loc.observer, date=datetime.datetime.now(), tzinfo=loc.timezone)
                 hour = datetime.datetime.now(timezone_tzinfo).hour
                 if (hour < s['sunrise'].hour) or (hour > s['sunset'].hour):
-                    print(f"\t{city} is dark")
+                    print(f"SKIP - dark")
                     continue
             
             # download if location is raining
@@ -193,8 +200,10 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
             except:
                 raining = is_raining(lat, lon, API_KEYS[1])
             if raining:
-                print(f"\t{city} has rain")
+                print(f"DOWNLOAD - OpenWeatherMap API indicates rain")
                 places[city] = [url, "best"]
+            else:
+                print(f"SKIP - OpenWeatherMap API indicates no rain")
     return places
 
 def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=pathlib.PosixPath("./downloads"), timeout=True):
