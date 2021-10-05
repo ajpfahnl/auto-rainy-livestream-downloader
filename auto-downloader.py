@@ -149,7 +149,8 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
     ----------
     spreadsheet : gspread.models.Spreadsheet
         A Google Sheet object
-        Each sheet must have three columns: City | Latitude | Longitude | Link
+        Each sheet must have four columns: City | Latitude | Longitude | Link
+        optionally a fifth column: Not Usable
       
     Returns
     -------
