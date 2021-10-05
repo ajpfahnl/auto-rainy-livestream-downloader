@@ -8,8 +8,8 @@ This program downloads livestream footage from links specified in a Google Sheet
 ## Setup
  1. Create a Google Sheet called __webcam-links__ with
     * each sheet is labeled by region 
-    * each sheet contains three columns: `City`, `Latitude`, `Longitude`, and `Link` filled in with the corresponding information.
-    * optionally, add a fourth column, `Not Usable`, that, when set to `X` (case insensitive), indicates not to download the video.
+    * each sheet contains four columns: `City`, `Latitude`, `Longitude`, and `Link` filled in with the corresponding information.
+    * optionally, add a fifth column, `Not Usable`, that, when set to `X` (case insensitive), indicates not to download the video.
  2. You will need to create a Google _service account_ that has the _Google Sheets API_ enabled. 
     * Share the __webcam-links__ Google Sheet with the Google service account created.
     * You will need to create a key for this service account and download it to a file called `google-sheet-service-auth.json` in this directory. Checkout the template of the file [here](google-sheet-service-authTEMPLATE.json).
