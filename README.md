@@ -17,7 +17,7 @@ optional arguments:
 ```
 
 ## Setup
-This was tested with Python 3.9.6, FFmpeg 4.4, and youtube-dl 2021.06.06. There are known issues with FFmpeg 3.x causing slow downloads.
+This was tested with __Python__ _3.9.6_, __FFmpeg__ _4.4_, and __youtube-dl__ _2021.06.06_. There are known issues with FFmpeg 3.x causing slow downloads.
 
  1. Create a Google Sheet called __webcam-links__ where
     * each sheet is labeled by region 
