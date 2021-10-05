@@ -1,4 +1,4 @@
-# Auto Rainy Livestream Downloader
+# Rainy Livestream Downloader
 
 This program downloads livestream footage from links specified in a Google Sheet if the location has rain. This downloader was used to obtain a rainy dataset for a research project I am working on.
 
