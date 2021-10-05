@@ -3,9 +3,9 @@
 This program downloads livestream footage from links specified in a Google Sheet if the location has rain. This downloader was used to obtain a rainy dataset for a research project I am working on.
 
 ## How to Use
-`auto-downloader.py` downloads forever in an infinite loop to a folder, default `downloads`, in subfolders automatically named with the year, month, and day a video is downloaded. You can also download a single file with `download.sh` which takes the format `./download.sh https://www.youtube.com/watch?v=Nu15hl3Eu7U 00:00:10 out.mp4`.
+`downloader.py` downloads forever in an infinite loop to a folder, default `downloads`, in subfolders automatically named with the year, month, and day a video is downloaded. You can also download a single file with `download.sh` which takes the format `./download.sh https://www.youtube.com/watch?v=Nu15hl3Eu7U 00:00:10 out.mp4`.
 ```
-usage: auto-downloader.py [-h] [-df DOWNLOADS_FOLDER] [-nt]
+usage: downloader.py [-h] [-df DOWNLOADS_FOLDER] [-nt]
 
 downloads rainy videos from a spreadsheet with livestream links
 
@@ -26,7 +26,9 @@ This was tested with Python 3.9.6, FFmpeg 4.4, and youtube-dl 2021.06.06. There 
  2. You will need to create a Google _service account_ that has the _Google Sheets API_ enabled. 
     * Share the __webcam-links__ Google Sheet with the Google service account created.
     * You will need to create a key for this service account and download it to a file called `google-sheet-service-auth.json` in this directory. Checkout the template of the file [here](google-sheet-service-authTEMPLATE.json).
- 3. Install necessary packages with pip (e.g. `pip install -r requirements.txt`). Note that this was tested on MacOS with Python 3.9.5.
+ 3. Install necessary packages either with
+    * `pip install -r requirements.txt`
+    * `./setup.sh` which sets up a virtual environment and installs necessary packages with pip
  4. Create API keys at https://api.openweathermap.org for "Current Weather Data". Create a `.env` file with a variable called `API_KEYS` and copy-and-paste the keys separated by a comma. A template can be found [here](.envTEMPLATE).
 
 The following is an example of the format for the __webcam-links__ Google Sheet:
