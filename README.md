@@ -6,7 +6,7 @@ This program downloads livestream footage from links specified in a Google Sheet
 `python3 auto-downloader.py` downloads forever in an infinite loop to a folder called `downloads` in subfolders automatically named with the year, month, and day a video is downloaded. You can also download a single file with `download.sh` which takes the format `./download.sh https://www.youtube.com/watch?v=Nu15hl3Eu7U 00:00:10 out.mp4`.
 
 ## Setup
- 1. Create a Google Sheet called __webcam-links__ with
+ 1. Create a Google Sheet called __webcam-links__ where
     * each sheet is labeled by region 
     * each sheet contains four columns: `City`, `Latitude`, `Longitude`, and `Link` filled in with the corresponding information.
     * optionally, add a fifth column, `Not Usable`, that, when set to `X` (case insensitive), indicates not to download the video.
