@@ -260,7 +260,7 @@ def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=p
     # this while loop constantly checks the return codes to see if the
     # processes have completed. If one of the processes exceeds
     # 1.5*seconds+60, the process is killed and its temporary file removed.
-    while True and not timeout:
+    while True and timeout:
         time.sleep(1)
         return_codes = [p.poll() for p, _ in processes]
         return_codes_not_None = [r for r in return_codes if r is not None]
@@ -301,6 +301,10 @@ def main():
     args = parser.parse_args()
     downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
     timeout = not args.notimeout
+    if timeout:
+        print("ENABLED timeout")
+    else:
+        print("DISABLED timeout")
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
