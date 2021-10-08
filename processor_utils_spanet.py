@@ -1,5 +1,4 @@
 import numpy as np
-from tqdm import tqdm
 import torch.multiprocessing as mp
 
 def get_max_occur_number(arr):
@@ -13,19 +12,17 @@ def job(q,y,Range):
     percent_min = []
     percent_max = []
     maps = np.zeros((int(h2-h1)*int(w2-w1),101))
-    for h in tqdm(range(int(h1),int(h2))):
+    for h in range(int(h1),int(h2)):
         for w in range(int(w1),int(w2)):
             argmax,count = get_max_occur_number(y[:,h,w])
             index = [i for (i, j) in enumerate(sorted(y[:,h,w])) if j == argmax ]
             percent_min.append(index[0]/len(y[:,h,w])*100)
             percent_max.append(index[-1]/len(y[:,h,w])*100)
-    for i in tqdm(range(int(h2-h1)*int(w2-w1))):
+    for i in range(int(h2-h1)*int(w2-w1)):
         for j in range(0,101):
             if j >= percent_min[i] and j <= percent_max[i]:
                 maps[i,j]=1
-    # print('range {w1} to {w2}, {h1} to {h2} is being stored...'.format(w1=w1,w2=w2,h1=h1,h2=h2))
     q.put(maps)
-    # print('range {w1} to {w2}, {h1} to {h2} was stored successfully...'.format(w1=w1,w2=w2,h1=h1,h2=h2))
 
 def computer_percentile(y):
     _,H,W = y.shape
