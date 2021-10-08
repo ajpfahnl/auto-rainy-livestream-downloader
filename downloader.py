@@ -55,7 +55,7 @@ def print_stdout(process):
     except:
         return
 
-def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time_length="00:00:10.00", wait=True):
+def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time_length="00:00:10.00", wait=True) -> tuple[subprocess.Popen, pathlib.PosixPath]:
     '''
     Downloading a video with youtube-dl and ffmpeg
 
@@ -280,8 +280,8 @@ def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=p
 
     # move downloaded videos from temporary directory to permanent directory
     # only if successfully downloaded (exit code 0)
-    for i, (_, download_path) in enumerate(processes):
-        if exit_codes[i] == 0:
+    for p, download_path in processes:
+        if p.returncode == 0:
             subprocess.call([f"mv '{download_path}' '{folder_path}'"], shell=True)
     return exit_codes, folder_path
 
@@ -298,6 +298,7 @@ def main():
     parser = argparse.ArgumentParser(description='downloads rainy videos from a spreadsheet with livestream links')
     parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
     parser.add_argument('-nt', '--notimeout', default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
+    parser.add_argument('-s', '--sheet', type=str, default='webcam-links', help='name of Google Sheet to parse livestream information from')
     args = parser.parse_args()
     downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
     timeout = not args.notimeout
@@ -305,6 +306,7 @@ def main():
         print("ENABLED timeout")
     else:
         print("DISABLED timeout")
+    sheet_name = args.sheet
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
@@ -317,7 +319,7 @@ def main():
     places_rainy_old = {}
     while True:
         try:
-            spreadsheet = gc.open("webcam-links")
+            spreadsheet = gc.open(sheet_name)
             places_rainy_new = find_rainy_places(spreadsheet)
 
             # New Python syntax
