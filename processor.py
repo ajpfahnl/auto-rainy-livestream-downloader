@@ -9,6 +9,7 @@ from tqdm import tqdm
 from PIL import Image
 import time
 from datetime import timedelta
+import sys
 
 def main():
     parser = argparse.ArgumentParser("post-processor for downloaded videos")
@@ -34,12 +35,17 @@ def main():
 
     # used to test SPANet frames to determine which number of frames should be used
     for i, scene in enumerate(scenes):
+        if i < 31:
+            continue
         print(f'{i}: {scene["name"]}')
         time_global_start = time.time()
         
         # read video, generate SPAN frame, read clean frame
         time_start = time.time()
-        frames = read_video(scene)
+        ret, frames = read_video(scene)
+        if ret == False:
+            print('[ERROR] bad video - no frame count', sys.stderr)
+            continue
         print(f'\tRead video: {timedelta(seconds=int(time.time()-time_start))}')
         time_start = time.time()
         SPAN_frame = SPAN_gen_single(frames, num_frames=scene['sparsity'])

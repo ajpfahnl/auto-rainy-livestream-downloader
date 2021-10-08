@@ -82,6 +82,8 @@ def read_video(scene):
     width = crop_R - crop_L
     num_frames = end_frame - start_frame
     video = cv2.VideoCapture(str(video_path))
+    if video.get(cv2.CAP_PROP_FRAME_COUNT) == 0:
+        return False, np.array([0])
     # skips to first frame
     for i in range(start_frame):
         video.read()
@@ -92,7 +94,7 @@ def read_video(scene):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = frame[crop_T:crop_B,crop_L:crop_R,:]
         frames[i] = frame
-    return frames
+    return True, frames
 
 def read_clean(scene):
     frame_num = scene['clean_frame']
