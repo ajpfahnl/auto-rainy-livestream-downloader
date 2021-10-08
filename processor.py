@@ -77,6 +77,7 @@ def main():
         path_name = scene_path / Path(scene['name']+'-Webcam-C-000.png')
         if not path_name.exists():
             print(f"ruh roh... this file doesn't exist (;_;): {path_name}")
+        print(f'\tTotal: {timedelta(seconds=int(time.time()-time_global_start))}')
 
 if __name__ == "__main__":
     main()
