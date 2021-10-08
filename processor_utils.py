@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from pathlib import PosixPath
+from pathlib import Path
 from PIL import Image
 
 def show_img(img, grey=False):
@@ -12,7 +12,7 @@ def show_img(img, grey=False):
         plt.imshow(img)
         plt.show()
 
-def read_spreadsheet(worksheet, folder_path: PosixPath):
+def read_spreadsheet(worksheet, folder_path: Path):
     data = worksheet.get_all_values()
     data = np.array(data)
     rows, _ = data.shape
@@ -24,8 +24,8 @@ def read_spreadsheet(worksheet, folder_path: PosixPath):
         if data[i, 0] != '':
             date = data[i, 0]
         if data[i, 1] != '' and data[i, 2] != '':
-            rainy_video_path = PosixPath(folder_path / date / (data[i,1] + '.mp4'))
-            clean_video_path = PosixPath(folder_path / date / (data[i,2] + '.mp4'))
+            rainy_video_path = Path(folder_path / date / (data[i,1] + '.mp4'))
+            clean_video_path = Path(folder_path / date / (data[i,2] + '.mp4'))
             if not rainy_video_path.exists():
                 print(f"ruh roh... this rainy vid doesn't exist (;_;): {rainy_video_path}")
                 continue
@@ -92,7 +92,6 @@ def read_video(scene):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame = frame[crop_T:crop_B,crop_L:crop_R,:]
         frames[i] = frame
-    print("finished reading video :)")
     return frames
 
 def read_clean(scene):
