@@ -16,10 +16,12 @@ def main():
     parser.add_argument('-s', '--sheet', type=str, default='downloads_first_pass', help='name of Google Sheet with metadata')
     parser.add_argument('-i', '--input-folder', type=str, default='./downloads', help='parent directory relative to paths of videos specified in Google Sheet. Default: ./downloads')
     parser.add_argument('-o', '--output-folder', type=str, default='./new-dataset', help='directory of dataset generated. Default: ./new-dataset')
+    parser.add_argument('-n', type=int, default=0, help='number of scenes to skip processing')
     args = parser.parse_args()
     sheet_name = args.sheet
     downloads_folder = Path(args.input_folder).expanduser()
     new_dataset_folder = Path(args.output_folder).expanduser()
+    num_to_skip = args.n
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
     worksheet = gc.open(sheet_name).sheet1
@@ -35,7 +37,7 @@ def main():
 
     # used to test SPANet frames to determine which number of frames should be used
     for i, scene in enumerate(scenes):
-        if i < 31:
+        if i < num_to_skip:
             continue
         print(f'{i}: {scene["name"]}')
         time_global_start = time.time()
