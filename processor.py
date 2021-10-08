@@ -62,9 +62,7 @@ def main():
 
         Image.fromarray(SPAN_frame.astype(np.uint8)).save(scene_sample_path / (scene['name']+'-Webcam-P-000.png'))
         Image.fromarray(clean_frame.astype(np.uint8)).save(scene_sample_path / (scene['name']+'-Webcam-C-000.png'))
-        Image.fromarray(frames[0].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-{i:03d}.png'))
-        Image.fromarray(frames[10].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-{i:03d}.png'))
-        Image.fromarray(frames[20].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-{i:03d}.png'))
+        Image.fromarray(frames[20].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-020.png'))
         print(f'\tSaving: {timedelta(seconds=int(time.time()-time_start))}')
 
         for i in tqdm(range(frames.shape[0]), leave=False):
