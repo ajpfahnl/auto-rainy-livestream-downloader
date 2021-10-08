@@ -12,14 +12,16 @@ from datetime import timedelta
 
 def main():
     parser = argparse.ArgumentParser("post-processor for downloaded videos")
+    parser.add_argument('-s', '--sheet', type=str, default='downloads_first_pass', help='name of Google Sheet with metadata')
     parser.add_argument('-i', '--input-folder', type=str, default='./downloads', help='parent directory relative to paths of videos specified in Google Sheet. Default: ./downloads')
     parser.add_argument('-o', '--output-folder', type=str, default='./new-dataset', help='directory of dataset generated. Default: ./new-dataset')
     args = parser.parse_args()
+    sheet_name = args.sheet
     downloads_folder = Path(args.input_folder).expanduser()
     new_dataset_folder = Path(args.output_folder).expanduser()
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
-    worksheet = gc.open('downloads_first_pass').sheet1
+    worksheet = gc.open(sheet_name).sheet1
     scene_names, scenes = read_spreadsheet(worksheet, downloads_folder)
     print(f'number of scenes: {len(scenes)}')
     print(f'number of scene names: {len(scene_names)}')
