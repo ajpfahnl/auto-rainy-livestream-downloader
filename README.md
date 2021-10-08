@@ -5,7 +5,7 @@ This program downloads livestream footage from links specified in a Google Sheet
 ## How to Use
 `downloader.py` downloads forever in an infinite loop to a folder, default `downloads`, in subfolders automatically named with the year, month, and day a video is downloaded. You can also download a single file with `download.sh` which takes the format `./download.sh https://www.youtube.com/watch?v=Nu15hl3Eu7U 00:00:10 out.mp4`.
 ```
-usage: downloader.py [-h] [-df DOWNLOADS_FOLDER] [-nt]
+usage: downloader.py [-h] [-df DOWNLOADS_FOLDER] [-nt] [-s SHEET]
 
 downloads rainy videos from a spreadsheet with livestream links
 
@@ -14,6 +14,8 @@ optional arguments:
   -df DOWNLOADS_FOLDER, --downloads-folder DOWNLOADS_FOLDER
                         folder to download videos to. Default is ./downloads/
   -nt, --notimeout      don't timeout and kill ffmpeg process
+  -s SHEET, --sheet SHEET
+                        name of Google Sheet to parse livestream information froms
 ```
 
 ## Setup
