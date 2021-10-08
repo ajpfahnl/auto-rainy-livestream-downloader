@@ -5,12 +5,12 @@ from pathlib import Path
 from PIL import Image
 
 def show_img(img, grey=False):
-    plt.figure(figsize=(15, 15))
+    plt.figure(figsize=(15, 8))
     if grey:
         plt.imshow(img, cmap='gray', vmin=0, vmax=1)
     else:
         plt.imshow(img)
-        plt.show()
+    plt.show()
 
 def read_spreadsheet(worksheet, folder_path: Path):
     data = worksheet.get_all_values()
