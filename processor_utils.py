@@ -71,7 +71,7 @@ def read_spreadsheet(worksheet, folder_path: Path):
                 scene_names[name] = 1
     return scene_names, scenes
 
-def read_video(scene) -> tuple[bool, np.ndarray]:
+def read_video(scene):
     '''
     returns bool ret:
         True: read successful
