@@ -3,7 +3,7 @@
 import dotenv
 import os
 import requests
-import pathlib
+from pathlib import Path
 import subprocess
 import gspread
 import time
@@ -45,7 +45,7 @@ def is_raining(lat, lon, api_key):
         return True
     return False
 
-def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time_length="00:00:10.00", wait=True) -> tuple[subprocess.Popen, pathlib.PosixPath]:
+def download_ydl_ffmpeg(place, url, dir: Path, quality="best", time_length="00:00:10.00", wait=True):
     '''
     Downloading a video with youtube-dl and ffmpeg
 
@@ -57,7 +57,7 @@ def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time
     url : str
         video URL
       
-    dir : pathlib.PosixPath
+    dir : Path
         directory for the video downloads
 
     quality : str, Default: best
@@ -74,7 +74,7 @@ def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time
     -------
     Popen subprocess object representing ffmpeg download or youtube-dl process
     if failed to retrieve manifest file and download path AND download path
-    represented as pathlib.PosixPath object.
+    represented as Path object.
 
     Side Effects
     ------------
@@ -197,7 +197,7 @@ def find_rainy_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
                 print(f"SKIP - OpenWeatherMap API indicates no rain")
     return places
 
-def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=pathlib.PosixPath("./downloads"), timeout=True):
+def download(places, seconds=10, tmp_dir=Path('./tmp'), final_dir=Path("./downloads"), timeout=True):
     '''
     auto-downloader logic
 
@@ -209,16 +209,16 @@ def download(places, seconds=10, tmp_dir=pathlib.PosixPath('./tmp'), final_dir=p
     seconds : int
         length of time in seconds for video length
       
-    tmp_dir : pathlib.PosixPath
+    tmp_dir : Path
         temporary directory where files are downloaded before being moved
         to the permanent final_dir
 
-    final_dir : pathlib.PosixPath
+    final_dir : Path
         final directory where compeleted downloads are stored
     
     Returns
     -------
-    array of exit codes AND folder path (pathlib.PosixPath) for the downloads
+    array of exit codes AND folder path (Path) for the downloads
     '''
     # create temporary directory if it doesn't exist
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -291,7 +291,7 @@ def main():
     parser.add_argument('-s', '--sheet', type=str, default='webcam-links', help='name of Google Sheet to parse livestream information from. Default \'webcam-links\'')
     parser.add_argument('-e', '--extra', type=int, default=1, help='number of extra videos to download after the OpenWeatherMap API says it stops raining. Default 1.')
     args = parser.parse_args()
-    downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
+    downloads_folder = Path(args.downloads_folder).expanduser()
     timeout = not args.notimeout
     if timeout:
         print("ENABLED timeout")
@@ -353,7 +353,7 @@ def test():
     Test function for downloader
     '''
     places = {"TEST": ["https://www.youtube.com/watch?v=xSjORzAWP1Y", "best"]}
-    download(places, final_dir=pathlib.PosixPath('~/Downloads/test/').expanduser())
+    download(places, final_dir=Path('~/Downloads/test/').expanduser())
 
 
 if __name__ == "__main__":
