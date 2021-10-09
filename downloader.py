@@ -289,6 +289,7 @@ def main():
     parser.add_argument('-df', '--downloads-folder', type=str, default='./downloads/', help='folder to download videos to. Default is ./downloads/')
     parser.add_argument('-nt', '--notimeout', default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
     parser.add_argument('-s', '--sheet', type=str, default='webcam-links', help='name of Google Sheet to parse livestream information from. Default \'webcam-links\'')
+    parser.add_argument('-e', '--extra', type=int, default=1, help='number of extra videos to download after the OpenWeatherMap API says it stops raining. Default 1.')
     args = parser.parse_args()
     downloads_folder = pathlib.PosixPath(args.downloads_folder).expanduser()
     timeout = not args.notimeout
@@ -297,30 +298,48 @@ def main():
     else:
         print("DISABLED timeout")
     sheet_name = args.sheet
+    extra = args.extra
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
-    # In this pipeline we also want to download a video without rain immediately
-    # after it rains. To do this, after every download, we create a dictionary
-    # of places to download by updating the previous rainy dictionary with a
-    # current rainy places dictionary. If a location had rain in the previous
-    # iteration but doesn't have rain now, that location will continue
-    # downloading for at least one more iteration.
-    places_rainy_old = {}
+    # In this pipeline we also want to download video(s) without rain immediately
+    # after it rains. To do this, we use a places_to_download dictionary with the following
+    # schema:
+    #   key: str place name
+    #   value: [str url, str 'best' (quality for youtube-dl)]
+    # and a corresponding places_extra dicionaty with the following schema:
+    #   key: str place name
+    #   value: int extra
+    # extra represents the number of times a video should be downloaded after it stops raining
+    # according to the rainy API
+    places_to_download = {}
+    places_extra = {}
     while True:
         try:
             spreadsheet = gc.open(sheet_name)
             places_rainy_new = find_rainy_places(spreadsheet)
-
-            # New Python syntax
-            # places_to_download = places_rainy_old | places_rainy_new
-
-            places_to_download = {**places_rainy_old, **places_rainy_new}
         except:
             print(traceback.format_exc())
             print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
             time.sleep(30)
             continue
+
+        # append the number of times the video should be downloaded after it stops raining
+        # add one to account for decrement
+        for place in places_rainy_new:
+            places_extra[place] = extra+1
+        
+        # update with new, decrement all, remove 0's
+        places_to_download.update(places_rainy_new)
+        for place in places_extra:
+            places_extra[place] -= 1
+            if places_extra[place] == 0:
+                del places_to_download[place]
+                del places_extra[place]
+            elif places_extra[place] < extra:
+                print(f'DRY: Downloading {place} {places_extra[place]} more times')
+
+        # download
         exit_codes, _ = download(places_to_download, seconds=120, final_dir=downloads_folder, timeout=timeout)
         if len(exit_codes) == 0:
             print("No videos to download, waiting 60 seconds...")
@@ -328,8 +347,6 @@ def main():
         elif 0 not in exit_codes:
             print("All videos failed to download, waiting 60 seconds...")
             time.sleep(60)
-        else:
-            places_rainy_old = places_rainy_new
 
 def test():
     '''
