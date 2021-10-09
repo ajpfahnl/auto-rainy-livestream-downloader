@@ -45,16 +45,6 @@ def is_raining(lat, lon, api_key):
         return True
     return False
 
-def print_stdout(process):
-    '''
-    Prints out stdout of a subprocess
-    '''
-    try:
-        for line in process.stdout:
-            print(line.rstrip())
-    except:
-        return
-
 def download_ydl_ffmpeg(place, url, dir: pathlib.PosixPath, quality="best", time_length="00:00:10.00", wait=True) -> tuple[subprocess.Popen, pathlib.PosixPath]:
     '''
     Downloading a video with youtube-dl and ffmpeg
