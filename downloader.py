@@ -320,9 +320,8 @@ def main():
             places_rainy_new = find_rainy_places(spreadsheet)
         except:
             print(traceback.format_exc())
-            print('Error opening spreadsheet or gettng rainy places, waiting 30 seconds...')
-            time.sleep(30)
-            continue
+            print('Error opening spreadsheet or gettng rainy places, continuing...')
+            places_rainy_new = {}
 
         # append the number of times the video should be downloaded after it stops raining
         # add one to account for decrement
