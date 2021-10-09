@@ -330,7 +330,7 @@ def main():
         
         # update with new, decrement all, remove 0's
         places_to_download.update(places_rainy_new)
-        for place in places_extra:
+        for place in list(places_extra):
             places_extra[place] -= 1
             if places_extra[place] == 0:
                 del places_to_download[place]
