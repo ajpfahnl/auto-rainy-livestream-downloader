@@ -3,6 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 from pathlib import Path
 from PIL import Image
+import sys
 
 def show_img(img, grey=False):
     plt.figure(figsize=(15, 8))
@@ -70,20 +71,37 @@ def read_spreadsheet(worksheet, folder_path: Path):
                 scene_names[name] = 1
     return scene_names, scenes
 
-def read_video(scene):
+def read_video(scene) -> tuple[bool, np.ndarray]:
+    '''
+    returns bool ret:
+        True: read successful
+        False: read not successful
+    '''
     start_frame = scene['start_frame']
     end_frame = scene['end_frame']
+    num_frames = end_frame - start_frame
     video_path = scene['rainy_video_path']
     crop_L = scene['l']
     crop_R = scene['r']
     crop_B = scene['b']
     crop_T = scene['t']
-    height = crop_B - crop_T
-    width = crop_R - crop_L
-    num_frames = end_frame - start_frame
+
+    if (crop_R <= crop_L) or (crop_B <= crop_T):
+        print('[ERROR] bad crop', sys.stderr)
+        return False, np.array([0])
+    
     video = cv2.VideoCapture(str(video_path))
     if video.get(cv2.CAP_PROP_FRAME_COUNT) == 0:
+        print('[ERROR] bad video - no frame count', sys.stderr)
         return False, np.array([0])
+
+    width_max = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height_max = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    crop_R = width_max if crop_R < 0 else crop_R
+    crop_B = height_max if crop_B<0 else crop_B
+    height = crop_B - crop_T
+    width = crop_R - crop_L
+
     # skips to first frame
     for i in range(start_frame):
         video.read()
