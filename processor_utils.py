@@ -86,7 +86,7 @@ def read_video(scene):
     crop_B = scene['b']
     crop_T = scene['t']
 
-    if (crop_R <= crop_L) or (crop_B <= crop_T):
+    if (crop_R <= crop_L and crop_R != -1) or (crop_B <= crop_T and crop_B != -1):
         print('[ERROR] bad crop', sys.stderr)
         return False, np.array([0])
     
