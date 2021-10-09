@@ -118,3 +118,43 @@ Revelstoke_2021-09-18_15-10-19.mp4,False,58.56,7.94,0,7200,0.00
 Geiranger_2021-09-18_16-53-48.mp4,True,66.91,4.20,150,3600,4.17
 Revelstoke_2021-09-18_16-49-10.mp4,False,57.07,5.09,0,7200,0.00
 ```
+
+## Processor
+`processor.py` takes metadata, including spatial and temporal crop information from a Google Sheet, and processes the corresponding videos according to that metadata. It generates rainy and clean image pairs along with a pseudo-ground truth generated using the method from [SPANet](https://github.com/stevewongv/SPANet). The processor is used as follows:
+```console
+$ ./processor.py -h
+usage: post-processor for downloaded videos [-h] [-s SHEET] [-i INPUT_FOLDER] [-o OUTPUT_FOLDER] [-n N] [--one]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SHEET, --sheet SHEET
+                        name of Google Sheet with metadata. Default: 'downloads_first_pass'
+  -i INPUT_FOLDER, --input-folder INPUT_FOLDER
+                        parent directory relative to paths of videos specified in Google Sheet. Default: ./downloads
+  -o OUTPUT_FOLDER, --output-folder OUTPUT_FOLDER
+                        directory of dataset generated. Default: ./new-dataset
+  -n N                  number of scenes to skip processing
+  --one                 process only one scene
+```
+The spreadsheet should be formatted as follows:
+
+![downloads_metadata](./images/downloads_metadata.png)
+
+Columns in green are required, one of the orange needs to contain data, and yellow is optional.
+
+To aid in the selection of crop areas, `processor_preview.py` provides a mechanism for seeking into a video and cropping a particular frame either by the frame count or number of seconds into the video:
+```console
+$ ./processor_preview.py -h
+usage: preview crops and other data before processing [-h] [-c CROP] [-f FRAME] [-t SECONDS] video_path
+
+positional arguments:
+  video_path            path to video
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CROP, --crop CROP  crop with format: L,R,T,B
+  -f FRAME, --frame FRAME
+                        frame number
+  -t SECONDS, --seconds SECONDS
+                        number of seconds into video. Supercedes --frame if specified.
+```
