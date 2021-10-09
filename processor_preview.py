@@ -35,6 +35,7 @@ def main():
 
     if args.seconds != -1:
         frame_num = int(fps*args.seconds)
+    print(f'FRAME: {frame_num}')
 
     # read frame
     for _ in range(frame_num):

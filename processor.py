@@ -15,10 +15,13 @@ def main():
     parser.add_argument('-s', '--sheet', type=str, default='downloads_first_pass', help='name of Google Sheet with metadata')
     parser.add_argument('-i', '--input-folder', type=str, default='./downloads', help='parent directory relative to paths of videos specified in Google Sheet. Default: ./downloads')
     parser.add_argument('-o', '--output-folder', type=str, default='./new-dataset', help='directory of dataset generated. Default: ./new-dataset')
+    parser.add_argument('-n', type=int, default=0, help='number of scenes to skip processing')
+    parser.add_argument('--one', default=False, action='store_true', help='process only one scene')
     args = parser.parse_args()
     sheet_name = args.sheet
     downloads_folder = Path(args.input_folder).expanduser()
     new_dataset_folder = Path(args.output_folder).expanduser()
+    num_to_skip = args.n
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
     worksheet = gc.open(sheet_name).sheet1
@@ -34,12 +37,16 @@ def main():
 
     # used to test SPANet frames to determine which number of frames should be used
     for i, scene in enumerate(scenes):
+        if i < num_to_skip:
+            continue
         print(f'{i}: {scene["name"]}')
         time_global_start = time.time()
         
         # read video, generate SPAN frame, read clean frame
         time_start = time.time()
-        frames = read_video(scene)
+        ret, frames = read_video(scene)
+        if ret == False:
+            continue
         print(f'\tRead video: {timedelta(seconds=int(time.time()-time_start))}')
         time_start = time.time()
         SPAN_frame = SPAN_gen_single(frames, num_frames=scene['sparsity'])
@@ -60,8 +67,11 @@ def main():
         for i in range(frames.shape[0]):
             Image.fromarray(frames[i].astype(np.uint8)).save(scene_path / (scene_name+f'-Webcam-R-{i:03d}.png'))
 
+        # samples for quick checking
         Image.fromarray(SPAN_frame.astype(np.uint8)).save(scene_sample_path / (scene['name']+'-Webcam-P-000.png'))
         Image.fromarray(clean_frame.astype(np.uint8)).save(scene_sample_path / (scene['name']+'-Webcam-C-000.png'))
+        Image.fromarray(frames[0].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-000.png'))
+        Image.fromarray(frames[10].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-010.png'))
         Image.fromarray(frames[20].astype(np.uint8)).save(scene_sample_path / (scene['name']+f'-Webcam-R-020.png'))
         print(f'\tSaving: {timedelta(seconds=int(time.time()-time_start))}')
 
@@ -78,6 +88,9 @@ def main():
         if not path_name.exists():
             print(f"ruh roh... this file doesn't exist (;_;): {path_name}")
         print(f'\tTotal: {timedelta(seconds=int(time.time()-time_global_start))}')
+
+        if args.one:
+            break
 
 if __name__ == "__main__":
     main()
