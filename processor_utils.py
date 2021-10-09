@@ -15,56 +15,56 @@ def show_img(img, grey=False):
 
 def read_spreadsheet(worksheet, folder_path: Path):
     data = worksheet.get_all_values()
-    data = np.array(data)
-    rows, _ = data.shape
+    rows = len(data)
 
     # currently only loading scenes with both a rainy and clean video in spreadsheet
     scenes = []
     scene_names = {}
     for i in range(1, rows):
-        if data[i, 0] != '':
-            date = data[i, 0]
-        if data[i, 1] != '' and data[i, 2] != '':
-            rainy_video_path = Path(folder_path / date / (data[i,1] + '.mp4'))
-            clean_video_path = Path(folder_path / date / (data[i,2] + '.mp4'))
+        if data[i][0] != '':
+            date = data[i][0]
+        if data[i][1] != '' and data[i][2] != '':
+            rainy_video_path = Path(folder_path / date / (data[i][1] + '.mp4'))
+            clean_video_path = Path(folder_path / date / (data[i][2] + '.mp4'))
             if not rainy_video_path.exists():
                 print(f"ruh roh... this rainy vid doesn't exist (;_;): {rainy_video_path}")
                 continue
             if not clean_video_path.exists():
                 print(f"ruh roh... this clean vid doesn't exist (;_;): {clean_video_path}")
                 continue
-            if data[i, 5] == '':
+            if data[i][5] == '':
                 print("No cropping is available...")
                 continue
-            if data[i, 9] == '':
+            if (data[i][9] == '') and (data[i][11] == ''):
                 print("No timestamps available...")
                 continue
-            if data[i, 12] == '':
+            if data[i][12] == '':
                 print("No clean frames available...")
                 continue
-            if data[i, 13] == '':
+            if data[i][13] == '':
                 print("No sparsity boolean...")
                 continue
-            if data[i, 14] == '':
+            if data[i][14] == '':
                 print("No name...")
                 continue
             scene_data = {
-                'l' : data[i, 5].astype(np.int),
-                'r' : data[i, 6].astype(np.int),
-                't' : data[i, 7].astype(np.int),
-                'b' : data[i, 8].astype(np.int),
+                'l' : int(data[i][5]),
+                'r' : int(data[i][6]),
+                't' : int(data[i][7]),
+                'b' : int(data[i][8]),
                 'rainy_video_path' : rainy_video_path,
                 'clean_video_path': clean_video_path,
-                'start_frame' : data[i, 9].astype(np.int),
-                'end_frame' : data[i, 10].astype(np.int),
-                'clean_frame': data[i, 12].astype(np.int),
-                'sparsity' : data[i, 13].astype(np.int),
-                'name' : data[i, 14]
+                'start_frame' : -1 if data[i][9] == '' else int(data[i][9]),
+                'num_frames' : -1 if data[i][10] == '' else int(data[i][10]),
+                'seconds' : -1 if data[i][11] == '' else int(data[i][11]),
+                'clean_frame': int(data[i][12]),
+                'sparsity' : int(data[i][13]),
+                'name' : data[i][14]
             }
             print(scene_data)
             scenes.append(scene_data)
 
-            name, right = data[i,14].split("-", 1)
+            name, right = data[i][14].split("-", 1)
             if name in scene_names.keys():
                 scene_names[name] += 1
             else:
@@ -78,8 +78,8 @@ def read_video(scene):
         False: read not successful
     '''
     start_frame = scene['start_frame']
-    end_frame = scene['end_frame']
-    num_frames = end_frame - start_frame
+    num_frames = 300 if scene['num_frames'] == -1 else scene['num_frames']
+    seconds = scene['seconds']
     video_path = scene['rainy_video_path']
     crop_L = scene['l']
     crop_R = scene['r']
@@ -94,6 +94,10 @@ def read_video(scene):
     if video.get(cv2.CAP_PROP_FRAME_COUNT) == 0:
         print('[ERROR] bad video - no frame count', sys.stderr)
         return False, np.array([0])
+
+    if seconds != -1:
+        start_frame = int(video.get(cv2.CAP_PROP_FPS) * seconds)
+        print(f'\t{seconds}s into the video corresponds to {start_frame} frames')
 
     width_max = int(video.get(cv2.CAP_PROP_FRAME_WIDTH))
     height_max = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
