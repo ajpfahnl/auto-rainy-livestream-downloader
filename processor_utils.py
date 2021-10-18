@@ -42,7 +42,7 @@ def read_spreadsheet(worksheet, folder_path: Path):
                 print("No clean frames available...")
                 continue
             if data[i][13] == '':
-                print("No sparsity boolean...")
+                print("No sparsity frame count for SPANet...")
                 continue
             if data[i][14] == '':
                 print("No name...")
