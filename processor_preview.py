@@ -10,7 +10,7 @@ def main():
     parser.add_argument('video_path', type=str, help='path to video')
     parser.add_argument('-c', '--crop', type=str, default='', help='crop with format: L,R,T,B')
     parser.add_argument('-f', '--frame', type=int, default=0, help='frame number')
-    parser.add_argument('-t', '--seconds', type=int, default=-1, help='number of seconds into video. Supercedes --frame if specified.')
+    parser.add_argument('-t', '--seconds', type=float, default=-1, help='number of seconds into video. Supercedes --frame if specified.')
     args = parser.parse_args()
 
     # check inputs
