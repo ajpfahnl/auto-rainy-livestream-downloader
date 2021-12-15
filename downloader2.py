@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from typing import List, Tuple
 import dotenv
 import os
 import requests
@@ -14,36 +15,14 @@ import astral
 from astral.sun import sun
 import traceback
 import argparse
+import sys
+import json
 
 dotenv.load_dotenv()
 API_KEYS = os.getenv('API_KEYS').split(",")
 TEST = True if os.getenv('TEST').lower() == 'true' else False
 
-def is_raining(lat, lon, api_key):
-    '''
-    Check if raining at a given latitude and longitude
-    
-    Parameters
-    ----------
-    lat : str
-        latitude string
-        
-    lon : str
-        longitude string
-        
-    api_key : str
-        api key for api.openweathermap.org
-    
-    Returns
-    -------
-    bool : True if location is raining, False if not
-    '''
-    request_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}"
-    r = requests.get(request_url)
-    data = r.json()
-    if "rain" in data:
-        return True
-    return False
+CONDITIONS = ("clear", "clouds", "fog", "mist", "rain", "snow")
 
 def find_weather(lat, lon, api_key):
     '''
@@ -67,7 +46,8 @@ def find_weather(lat, lon, api_key):
     request_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}"
     r = requests.get(request_url)
     data = r.json()
-    return data["weather"][0]["main"].lower()
+    conditions = sorted([w["main"].lower() for w in data["weather"]])
+    return conditions, data
 
 def download_ydl_ffmpeg(place, url, weather, dir: Path, quality="best", time_length="00:00:10.00", wait=True):
     '''
@@ -159,7 +139,7 @@ def download_ydl_ffmpeg(place, url, weather, dir: Path, quality="best", time_len
     log.close()
     return p_ffmpeg, download_path
 
-def find_places(spreadsheet: gspread.Spreadsheet, daytime=True):
+def find_places(spreadsheet: gspread.Spreadsheet, daytime: bool=True, condition_excludes: Tuple[str]=()):
     '''
     Return a dictionary of places and their Youtube URLs that currently have rain
 
@@ -169,12 +149,19 @@ def find_places(spreadsheet: gspread.Spreadsheet, daytime=True):
         A Google Sheet object
         Each sheet must have four columns: City | Latitude | Longitude | Link
         optionally a fifth column: Not Usable
+    
+    daytime : bool
+        only download daytime videos
+
+    condition_excludes : Tuple[str]
+        conditions to exclude from download
       
     Returns
     -------
     dictionary with the following schema:
         key: 'City' name in the spreadsheet
-        value: ['Link' url in spreadsheet, "best" (quality wanted to be passed to youtube-dl), 'weather' type]
+        value: ['Link' url in spreadsheet, "best" (quality wanted to be passed to youtube-dl), str 'weather' types, 'data' JSON from API]
+            Note that weather types are separated by hyphens '-'
     '''
     # parse spreadsheet data
     metadata = spreadsheet.fetch_sheet_metadata()
@@ -216,12 +203,17 @@ def find_places(spreadsheet: gspread.Spreadsheet, daytime=True):
             # download if location is raining
             for api_key in API_KEYS:
                 try:
-                    weather = find_weather(lat, lon, api_key)
+                    weather, data = find_weather(lat, lon, api_key)
                     break
                 except:
                     continue
-            print(f"DOWNLOAD - OpenWeatherMap API indicates {weather}")
-            places[city] = [url, "best", weather]
+            for w in weather:
+                if w in condition_excludes:
+                    print(f"SKIP - EXCLUDE OpenWeatherMap API indicates {weather}")
+                    break
+            else:
+                print(f"DOWNLOAD - OpenWeatherMap API indicates {weather}")
+                places[city] = [url, "best", '-'.join(weather), data]
     return places
 
 def download(places, seconds=10, tmp_dir=Path('./tmp'), final_dir=Path("./downloads"), timeout=True):
@@ -268,8 +260,8 @@ def download(places, seconds=10, tmp_dir=Path('./tmp'), final_dir=Path("./downlo
             tmp_dir,
             quality,
             time_length_str, 
-            wait=False), weather) \
-        for place, (url, quality, weather) in places.items()]
+            wait=False), weather, data) \
+        for place, (url, quality, weather, data) in places.items()]
     
     start_time = time.time()
     print(f"Attempting download of {len(processes)} video(s).")
@@ -280,12 +272,12 @@ def download(places, seconds=10, tmp_dir=Path('./tmp'), final_dir=Path("./downlo
     # 1.5*seconds+60, the process is killed and its temporary file removed.
     while True and timeout:
         time.sleep(1)
-        return_codes = [p.poll() for p, _, _ in processes]
+        return_codes = [p.poll() for p, _, _, _ in processes]
         return_codes_not_None = [r for r in return_codes if r is not None]
         if len(return_codes_not_None) == len(processes):
             break
         elif time.time() > start_time + 1.25*seconds + 60:
-            for p, download_path, _ in processes:
+            for p, download_path, _, _ in processes:
                 if p.returncode != 0:
                     print("Killing...")
                     p.kill()
@@ -293,16 +285,20 @@ def download(places, seconds=10, tmp_dir=Path('./tmp'), final_dir=Path("./downlo
                     subprocess.call([f"rm -f '{download_path}'"], shell=True)
             break
     
-    exit_codes = [p.wait() for p, _, _ in processes]
+    exit_codes = [p.wait() for p, _, _, _ in processes]
     print(exit_codes)
 
     # move downloaded videos from temporary directory to permanent directory
     # only if successfully downloaded (exit code 0)
-    for p, download_path, weather in processes:
+    for p, download_path, weather, data in processes:
         if p.returncode == 0:
             weather_folder_path = final_dir / folder_day_name / weather
             weather_folder_path.mkdir(parents=True, exist_ok=True)
+            data_path = weather_folder_path / f"{download_path.stem}.json"
+            
             subprocess.call([f"mv '{download_path}' '{weather_folder_path}'"], shell=True)
+            with open(data_path, 'w') as datalogf:
+                json.dump(data, datalogf)
     return exit_codes, folder_path
 
 
@@ -320,6 +316,9 @@ def main():
     parser.add_argument('-nt', '--notimeout', default=False, action='store_true', help='don\'t timeout and kill ffmpeg process')
     parser.add_argument('-s', '--sheet', type=str, default='webcam-links', help='name of Google Sheet to parse livestream information from. Default \'webcam-links\'')
     parser.add_argument('-e', '--extra', type=int, default=1, help='number of extra videos to download after the OpenWeatherMap API says it stops raining. Default 1.')
+    parser.add_argument('--exclude', type=str, default="", help=f'weather condition to exclude. Choose from {CONDITIONS} and separate by commma without spacing.')
+
+    # parse arguments
     args = parser.parse_args()
     downloads_folder = Path(args.downloads_folder).expanduser()
     timeout = not args.notimeout
@@ -328,7 +327,15 @@ def main():
     else:
         print("DISABLED timeout")
     sheet_name = args.sheet
-    extra = args.extra
+    extra = int(args.extra)
+
+    condition_excludes = str(args.exclude).split(',')
+    condition_excludes = [c.lower() for c in condition_excludes]
+    for c in condition_excludes:
+        if c not in CONDITIONS:
+            print(f"[ERROR] invalid condition to exclude. Choose from {CONDITIONS}.", file=sys.stderr)
+            exit(1)
+    print(f"EXCLUDE {condition_excludes}")
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
@@ -336,8 +343,8 @@ def main():
     # after it rains. To do this, we use a places_to_download dictionary with the following
     # schema:
     #   key: str place name
-    #   value: [str url, str 'best' (quality for youtube-dl), str weather]
-    # and a corresponding places_extra dicionaty with the following schema:
+    #   value: [str url, str 'best' (quality for youtube-dl), str weather, data json from API]
+    # and a corresponding places_extra dictionary with the following schema:
     #   key: str place name
     #   value: int extra
     # extra represents the number of times a video should be downloaded after it stops raining
@@ -347,7 +354,7 @@ def main():
     while True:
         try:
             spreadsheet = gc.open(sheet_name)
-            places_new = find_places(spreadsheet, daytime=False)
+            places_new = find_places(spreadsheet, daytime=False, condition_excludes=condition_excludes)
         except:
             print(traceback.format_exc())
             print('Error opening spreadsheet or gettng rainy places, continuing...')
@@ -366,7 +373,7 @@ def main():
                 del places_to_download[place]
                 del places_extra[place]
             elif places_extra[place] < extra:
-                print(f'DRY: Downloading {place} {places_extra[place]} more times')
+                print(f'EXTRA: Downloading {place} {places_extra[place]} more times')
 
         # download
         exit_codes, _ = download(places_to_download, seconds=120, final_dir=downloads_folder, timeout=timeout)
