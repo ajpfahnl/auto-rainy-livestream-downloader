@@ -159,13 +159,13 @@ def download_ydl_ffmpeg(place, url, weather, dir: Path, quality="best", time_len
     log.close()
     return p_ffmpeg, download_path
 
-def find_places(spreadsheet: gspread.models.Spreadsheet, daytime=True):
+def find_places(spreadsheet: gspread.Spreadsheet, daytime=True):
     '''
     Return a dictionary of places and their Youtube URLs that currently have rain
 
     Parameters
     ----------
-    spreadsheet : gspread.models.Spreadsheet
+    spreadsheet : gspread.Spreadsheet
         A Google Sheet object
         Each sheet must have four columns: City | Latitude | Longitude | Link
         optionally a fifth column: Not Usable
