@@ -317,15 +317,13 @@ def main():
     parser.add_argument('-s', '--sheet', type=str, default='webcam-links', help='name of Google Sheet to parse livestream information from. Default \'webcam-links\'')
     parser.add_argument('-e', '--extra', type=int, default=1, help='number of extra videos to download after the OpenWeatherMap API says it stops raining. Default 1.')
     parser.add_argument('--exclude', type=str, default="", help=f'weather condition to exclude. Choose from {CONDITIONS} and separate by commma without spacing.')
+    parser.add_argument('-d', '--daytime', default=False, action='store_true', help='for each video download ONLY when it is daytime.')
 
     # parse arguments
     args = parser.parse_args()
     downloads_folder = Path(args.downloads_folder).expanduser()
     timeout = not args.notimeout
-    if timeout:
-        print("ENABLED timeout")
-    else:
-        print("DISABLED timeout")
+    print("ENABLED timeout") if timeout else print("DISABLED timeout")
     sheet_name = args.sheet
     extra = int(args.extra)
 
@@ -336,6 +334,9 @@ def main():
             print(f"[ERROR] invalid condition to exclude. Choose from {CONDITIONS}.", file=sys.stderr)
             exit(1)
     print(f"EXCLUDE {condition_excludes}")
+    
+    daytime = bool(args.daytime)
+    print("ENABLED daytime only") if daytime else print("DISABLED daytime only")
 
     gc = gspread.service_account(filename="google-sheet-service-auth.json")
 
@@ -354,7 +355,7 @@ def main():
     while True:
         try:
             spreadsheet = gc.open(sheet_name)
-            places_new = find_places(spreadsheet, daytime=False, condition_excludes=condition_excludes)
+            places_new = find_places(spreadsheet, daytime=daytime, condition_excludes=condition_excludes)
         except:
             print(traceback.format_exc())
             print('Error opening spreadsheet or gettng rainy places, continuing...')
