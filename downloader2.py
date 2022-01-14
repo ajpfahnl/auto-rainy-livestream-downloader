@@ -194,10 +194,16 @@ def find_places(spreadsheet: gspread.Spreadsheet, daytime: bool=True, condition_
                 timezone_str = TimezoneFinder().timezone_at(lng=float(lon), lat=float(lat))
                 loc = astral.LocationInfo(name='loc', region='region', timezone=timezone_str, latitude=lat, longitude=lon)
                 timezone_tzinfo = pytz.timezone(timezone_str)
-                s = sun(loc.observer, date=datetime.datetime.now(), tzinfo=loc.timezone)
-                hour = datetime.datetime.now(timezone_tzinfo).hour
-                if (hour < s['sunrise'].hour) or (hour > s['sunset'].hour):
-                    print(f"SKIP - dark")
+                
+                try:
+                    s = sun(loc.observer, date=datetime.datetime.now(), tzinfo=loc.timezone)
+                    hour = datetime.datetime.now(timezone_tzinfo).hour
+                    if (hour < s['sunrise'].hour) or (hour > s['sunset'].hour):
+                        print(f"SKIP - dark")
+                        continue
+                except Exception as e:
+                    print(f"SKIP - dark (assumed). ERROR: ", end="")
+                    print(e)
                     continue
             
             # download if location is raining
